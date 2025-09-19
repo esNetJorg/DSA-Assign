@@ -38,14 +38,12 @@ type Asset record {
 map<Asset> assets = {};
 
 service /assets on new http:Listener(8080) {
-
-    // Add a new asset
+// to add a new asset
     resource function post add(@http:Payload Asset asset) returns json {
         assets[asset.assetTag] = asset;
         return { message: "Asset was added successfully" };
     }
-
-    // Get all assets
+// retrieves all assets
     resource function get all() returns Asset[] {
         Asset[] result = [];
         foreach var [_, asset] in assets.entries() {
@@ -54,7 +52,7 @@ service /assets on new http:Listener(8080) {
         return result;
     }
 
-    // Get assets by faculty
+    // Searches or gets asets by their faculty
     resource function get byFaculty(string faculty) returns Asset[] {
         Asset[] result = [];
         foreach var [_, asset] in assets.entries() {
@@ -64,8 +62,7 @@ service /assets on new http:Listener(8080) {
         }
         return result;
     }
-
-    // Add a schedule to an existing asset
+    // to add a schedule to an existing asset
     resource function post addSchedule(string assetTag, @http:Payload Schedule schedule) returns json {
         Asset? maybeAsset = assets[assetTag];
         if maybeAsset is Asset {
@@ -76,7 +73,7 @@ service /assets on new http:Listener(8080) {
         return { message: "Asset wasn't found" };
     }
 
-    // Get overdue assets
+    // retrieve overdue asets
     resource function get overdue() returns Asset[] {
         time:Utc now = time:utcNow();
 
