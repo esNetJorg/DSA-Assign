@@ -11,6 +11,7 @@ type Schedule record {
     string description;
     string dueDate; // yyyy-MM-dd
 };
+
 type Task record {
     string taskId;
     string description;
@@ -37,13 +38,28 @@ type Asset record {
 
 map<Asset> assets = {};
 
+// --- Helper function to normalize strings (lowercase + remove spaces)
+function normalize(string input) returns string {
+    string lowered = input.toLowerAscii();
+    string result = "";
+    foreach int i in 0 ..< lowered.length() {
+        string ch = lowered[i].toString();
+        if ch != " " {
+            result += ch;
+        }
+    }
+    return result;
+}
+
 service /assets on new http:Listener(8080) {
-// to add a new asset
+
+    // Add a new asset
     resource function post add(@http:Payload Asset asset) returns json {
         assets[asset.assetTag] = asset;
         return { message: "Asset was added successfully" };
     }
-// retrieves all assets
+
+    // Get all assets
     resource function get all() returns Asset[] {
         Asset[] result = [];
         foreach var [_, asset] in assets.entries() {
@@ -52,17 +68,25 @@ service /assets on new http:Listener(8080) {
         return result;
     }
 
-    // Searches or gets assets by their faculty
-    resource function get byFaculty(string faculty) returns Asset[] {
+    // Get assets by faculty (ignore spaces + case-insensitive + partial match)
+    resource function get byFaculty(string faculty) returns json|Asset[] {
+        string normalizedQuery = normalize(faculty);
         Asset[] result = [];
+
         foreach var [_, asset] in assets.entries() {
-            if asset.faculty == faculty {
+            string normalizedFac = normalize(asset.faculty);
+            if string:includes(normalizedFac, normalizedQuery) {
                 result.push(asset);
             }
         }
+
+        if result.length() == 0 {
+            return { message: "No assets found for faculty: " + faculty };
+        }
         return result;
     }
-    // to add a schedule to an existing asset
+
+    // Add a schedule to an existing asset
     resource function post addSchedule(string assetTag, @http:Payload Schedule schedule) returns json {
         Asset? maybeAsset = assets[assetTag];
         if maybeAsset is Asset {
@@ -73,11 +97,11 @@ service /assets on new http:Listener(8080) {
         return { message: "Asset wasn't found" };
     }
 
-    // retrieve overdue assets
-    resource function get overdue() returns Asset[] {
+    // Get overdue assets
+    resource function get overdue() returns json|Asset[] {
         time:Utc now = time:utcNow();
-
         Asset[] result = [];
+
         foreach var [_, asset] in assets.entries() {
             foreach var sch in asset.schedules {
                 string dueStr = sch.dueDate + "T00:00:00Z";
@@ -92,10 +116,10 @@ service /assets on new http:Listener(8080) {
                 }
             }
         }
+
+        if result.length() == 0 {
+            return { message: "No overdue assets found" };
+        }
         return result;
     }
 }
-
-
-
-
