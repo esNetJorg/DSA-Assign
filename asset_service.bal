@@ -73,7 +73,7 @@ service /assets on new http:Listener(8080) {
         return { message: "Asset wasn't found" };
     }
 
-    // retrieve overdue asets
+    // retrieve overdue assets
     resource function get overdue() returns Asset[] {
         time:Utc now = time:utcNow();
 
