@@ -52,7 +52,7 @@ service /assets on new http:Listener(8080) {
         return result;
     }
 
-    // Searches or gets asets by their faculty
+    // Searches or gets assets by their faculty
     resource function get byFaculty(string faculty) returns Asset[] {
         Asset[] result = [];
         foreach var [_, asset] in assets.entries() {
