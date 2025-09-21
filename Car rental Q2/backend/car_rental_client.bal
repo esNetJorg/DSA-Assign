@@ -37,7 +37,49 @@ public function main() returns error? {
     check runDemo();
 }        //40 to 82 here
 
-
+function runDemo() returns error? {
+    io:println("=== Car Rental System Demo ===\n");
+    
+    // 1. Create users
+    io:println("1. Creating users...");
+    CreateUsersResponse userResponse = check client->CreateUsers({users: demo_users});
+    io:println("Users created: " + userResponse.message);
+    
+    // 2. Add cars (Admin operation)
+    io:println("\n2. Adding cars to inventory...");
+    check addDemoCars();
+    
+    // 3. List available cars
+    io:println("\n3. Listing available cars...");
+    check listAvailableCars("");
+    
+    // 4. Search for specific car
+    io:println("\n4. Searching for specific car (ABC123)...");
+    check searchCar("ABC123");
+    
+    // 5. Add cars to cart
+    io:println("\n5. Adding cars to customer cart...");
+    check addToCart("customer1", "ABC123", "2025-10-01", "2025-10-05");
+    check addToCart("customer1", "XYZ789", "2025-10-10", "2025-10-15");
+    
+    // 6. Place reservation
+    io:println("\n6. Placing reservation...");
+    check placeReservation("customer1");
+    
+    // 7. List reservations (Admin operation)
+    io:println("\n7. Listing all reservations...");
+    check listReservations();
+    
+    // 8. Update car details
+    io:println("\n8. Updating car details...");
+    check updateCar("ABC123", "Toyota", "Camry Hybrid", 2024, 65.0);
+    
+    // 9. Remove a car
+    io:println("\n9. Removing a car...");
+    check removeCar("DEF456");
+    
+    io:println("\n=== Demo Completed ===");
+}
 
 function addDemoCars() returns error? {
     AddCarRequest request = {
@@ -322,4 +364,5 @@ function adminAddCar() returns error? {
     
 
     AddCar
+
 
