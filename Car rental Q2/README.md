@@ -95,12 +95,6 @@ car_rental_system/
 
 3. **Start the system:**
 
-**Linux/Mac:**
-```bash
-chmod +x start_system.sh
-./start_system.sh
-```
-
 **Windows:**
 ```cmd
 start_system.bat
@@ -113,16 +107,7 @@ start_system.bat
 
 ## 📋 **Available Commands**
 
-### Linux/Mac (start_system.sh)
-```bash
-./start_system.sh start      # Start all services
-./start_system.sh stop       # Stop all services
-./start_system.sh status     # Show system status
-./start_system.sh logs       # Show all logs
-./start_system.sh test       # Run test suite
-./start_system.sh clean      # Clean temporary files
-./start_system.sh help       # Show help
-```
+
 
 ### Windows (start_system.bat)
 ```cmd
@@ -332,36 +317,7 @@ Check logs for debugging:
 - Implement microservices architecture
 - Use container orchestration (Docker/K8s)
 
-## 🤝 **Contributing**
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Update documentation
-6. Submit a pull request
-
-## 📄 **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👥 **Team**
-
-- **System Architect**: Protocol Buffer design and service contracts
-- **Backend Developer**: gRPC server and business logic implementation  
-- **Frontend Developer**: Modern web interface and user experience
-- **DevOps Engineer**: Deployment scripts and system integration
-- **QA Engineer**: Test automation and quality assurance
-
-## 🙏 **Acknowledgments**
-
 - **Ballerina** - For the excellent gRPC and HTTP support
 - **Font Awesome** - For the beautiful icons
 - **gRPC** - For efficient client-server communication
 - **Protocol Buffers** - For structured data serialization
-
----
-
-**🎉 RentaCar Pro - Where Innovation Meets Mobility! 🚗✨**
-
-*Built with ❤️ using Ballerina, gRPC, and modern web technologies*
