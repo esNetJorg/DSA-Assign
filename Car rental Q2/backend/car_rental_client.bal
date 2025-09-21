@@ -2,169 +2,32 @@ import ballerina/grpc;
 import ballerina/io;
 import ballerina/log;
 import ballerina/time;
-
-// Placeholder enums (should be defined in the gRPC module or another file)
-public enum Role {
-    ADMIN,
-    CUSTOMER
-}
-
-public enum CarStatus {
-    AVAILABLE,
-    RESERVED,
-    MAINTENANCE
-}
-
-// Placeholder types (should be generated from the .proto file)
-type User record {|
-    string user_id;
-    string name;
-    string email;
-    Role role;
-    string created_at?;
-|};
-
-type Car record {|
-    string plate;
-    string make;
-    string model;
-    int year;
-    float daily_price;O
-    int mileage;
-    CarStatus status;
-|};
-
-type AddCarRequest record {|
-    string make;
-    string model;
-    int year;
-    float daily_price;
-    int mileage;
-    string plate;
-    CarStatus status;
-|};
-
-type AddCarResponse record {|
-    boolean success;
-    string car_id;
-    string message;
-|};
-
-type CreateUsersRequest record {|
-    User[] users;
-|};
-
-type CreateUsersResponse record {|
-    string message;
-|};
-
-type ListAvailableCarsRequest record {|
-    string filter_text;
-|};
-
-type SearchCarRequest record {|
-    string plate;
-|};
-
-type SearchCarResponse record {|
-    boolean found;
-    Car car?;
-    string message;
-|};
-
-type AddToCartRequest record {|
-    string customer_id;
-    string plate;
-    string start_date;
-    string end_date;
-|};
-
-type AddToCartResponse record {|
-    boolean success;
-    CartItem cart_item?;
-    string message;
-|};
-
-type CartItem record {|
-    string plate;
-    string start_date;
-    string end_date;
-    float estimated_price;
-|};
-
-type PlaceReservationRequest record {|
-    string customer_id;
-|};
-
-type PlaceReservationResponse record {|
-    boolean success;
-    float total_amount;
-    Reservation[] reservations;
-    string message;
-|};
-
-type Reservation record {|
-    string reservation_id;
-    string customer_id;
-    string plate;
-    string start_date;
-    string end_date;
-    float total_price;
-    string status;
-|};
-
-type UpdateCarRequest record {|
-    string plate;
-    string make?;
-    string model?;
-    int year?;
-    float daily_price?;
-    int mileage?;
-|};
-
-type UpdateCarResponse record {|
-    boolean success;
-    Car updated_car?;
-    string message;
-|};
-
-type RemoveCarRequest record {|
-    string plate;
-|};
-
-type RemoveCarResponse record {|
-    boolean success;
-    Car[] remaining_cars;
-    string message;
-|};
-
-type ListReservationsRequest record {|
-|};
+import car_rental; // Generated from car_rental.proto
 
 // Client configuration
-CarRentalServiceClient client = check new ("http://localhost:9090");
+car_rental:CarRentalServiceClient client = check new ("http://localhost:9090");
 
 // Mock data
-User[] demo_users = [
+car_rental:User[] demo_users = [
     {
         user_id: "admin1",
         name: "Admin User",
         email: "admin@carrental.com",
-        role: ADMIN,
+        role: car_rental:ADMIN,
         created_at: time:utcToString(time:utcNow())
     },
     {
         user_id: "customer1",
         name: "John Doe",
         email: "john@example.com",
-        role: CUSTOMER,
+        role: car_rental:CUSTOMER,
         created_at: time:utcToString(time:utcNow())
     },
     {
         user_id: "customer2",
         name: "Jane Smith",
         email: "jane@example.com",
-        role: CUSTOMER,
+        role: car_rental:CUSTOMER,
         created_at: time:utcToString(time:utcNow())
     }
 ];
@@ -184,7 +47,7 @@ function runDemo() returns error? {
     
     // 1. Create users
     io:println("1. Creating users...");
-    CreateUsersResponse userResponse = check client->CreateUsers({users: demo_users});
+    car_rental:CreateUsersResponse userResponse = check client->CreateUsers({users: demo_users});
     io:println("Users created: " + userResponse.message);
     
     // 2. Add cars (Admin operation)
@@ -193,38 +56,46 @@ function runDemo() returns error? {
     
     // 3. List available cars
     io:println("\n3. Listing available cars...");
-    check listAvailableCars("");
+    check listAvailableCars({filter_text: "", year_filter: ()});
     
     // 4. Search for specific car
     io:println("\n4. Searching for specific car (ABC123)...");
-    check searchCar("ABC123");
+    check searchCar({plate: "ABC123"});
     
     // 5. Add cars to cart
     io:println("\n5. Adding cars to customer cart...");
-    check addToCart("customer1", "ABC123", "2025-10-01", "2025-10-05");
-    check addToCart("customer1", "XYZ789", "2025-10-10", "2025-10-15");
+    check addToCart({customer_id: "customer1", plate: "ABC123", start_date: "2025-10-01", end_date: "2025-10-05"});
+    check addToCart({customer_id: "customer1", plate: "XYZ789", start_date: "2025-10-10", end_date: "2025-10-15"});
     
     // 6. Place reservation
     io:println("\n6. Placing reservation...");
-    check placeReservation("customer1");
+    check placeReservation({customer_id: "customer1"});
     
     // 7. List reservations (Admin operation)
     io:println("\n7. Listing all reservations...");
-    check listReservations();
+    check listReservations({customer_id: ()});
     
     // 8. Update car details
     io:println("\n8. Updating car details...");
-    check updateCar("ABC123", "Toyota", "Camry Hybrid", 2024, 65.0);
+    check updateCar({
+        plate: "ABC123",
+        make: "Toyota",
+        model: "Camry Hybrid",
+        year: 2024,
+        daily_price: 65.0,
+        mileage: (),
+        status: ()
+    });
     
     // 9. Remove a car
     io:println("\n9. Removing a car...");
-    check removeCar("DEF456");
+    check removeCar({plate: "DEF456"});
     
     io:println("\n=== Demo Completed ===");
 }
 
 function addDemoCars() returns error? {
-    AddCarRequest[] cars = [
+    car_rental:AddCarRequest[] cars = [
         {
             make: "Toyota",
             model: "Camry",
@@ -232,7 +103,7 @@ function addDemoCars() returns error? {
             daily_price: 60.0,
             mileage: 15000,
             plate: "ABC123",
-            status: AVAILABLE
+            status: car_rental:AVAILABLE
         },
         {
             make: "Honda",
@@ -241,7 +112,7 @@ function addDemoCars() returns error? {
             daily_price: 50.0,
             mileage: 25000,
             plate: "XYZ789",
-            status: AVAILABLE
+            status: car_rental:AVAILABLE
         },
         {
             make: "Ford",
@@ -250,12 +121,12 @@ function addDemoCars() returns error? {
             daily_price: 80.0,
             mileage: 5000,
             plate: "DEF456",
-            status: AVAILABLE
+            status: car_rental:AVAILABLE
         }
     ];
     
-    foreach AddCarRequest carRequest in cars {
-        AddCarResponse response = check client->AddCar(carRequest);
+    foreach car_rental:AddCarRequest carRequest in cars {
+        car_rental:AddCarResponse response = check client->AddCar(carRequest);
         if response.success {
             io:println("✓ Added car: " + carRequest.plate + " (" + carRequest.make + " " + carRequest.model + ")");
         } else {
@@ -285,17 +156,17 @@ function adminAddCar() returns error? {
         return e;
     };
     
-    AddCarRequest request = {
+    car_rental:AddCarRequest request = {
         make: make,
         model: model,
         year: year,
-        daily_price: dailyPrice,
+        daily_price: <double>dailyPrice, // Convert float to double as per proto
         mileage: mileage,
         plate: plate,
-        status: AVAILABLE
+        status: car_rental:AVAILABLE
     };
     
-    AddCarResponse response = check client->AddCar(request);
+    car_rental:AddCarResponse response = check client->AddCar(request);
     
     if response.success {
         io:println("✓ Car added successfully: " + response.car_id);
@@ -312,7 +183,7 @@ function adminUpdateCar() returns error? {
     string priceStr = io:readln("Enter new daily price (or press Enter to skip): ");
     string mileageStr = io:readln("Enter new mileage (or press Enter to skip): ");
     
-    UpdateCarRequest request = {plate: plate};
+    car_rental:UpdateCarRequest request = {plate: plate};
     
     if make != "" {
         request.make = make;
@@ -327,7 +198,7 @@ function adminUpdateCar() returns error? {
         };
     }
     if priceStr != "" {
-        request.daily_price = check float:fromString(priceStr) on fail var e => {
+        request.daily_price = <double>check float:fromString(priceStr) on fail var e => {
             io:println("Invalid price input");
             return e;
         };
@@ -338,8 +209,9 @@ function adminUpdateCar() returns error? {
             return e;
         };
     }
+    // Status is optional, left as default if not provided
     
-    UpdateCarResponse response = check client->UpdateCar(request);
+    car_rental:UpdateCarResponse response = check client->UpdateCar(request);
     
     if response.success {
         io:println("✓ Car updated successfully");
@@ -348,13 +220,13 @@ function adminUpdateCar() returns error? {
     }
 }
 
-function listAvailableCars(string filter) returns error? {
-    stream<Car, grpc:Error?> carStream = check client->ListAvailableCars({filter_text: filter});
+function listAvailableCars(car_rental:ListAvailableCarsRequest request) returns error? {
+    stream<car_rental:Car, grpc:Error?> carStream = check client->ListAvailableCars(request);
     
     io:println("Available Cars:");
     io:println("===============");
     
-    error? streamResult = carStream.forEach(function(Car car) {
+    error? streamResult = carStream.forEach(function(car_rental:Car car) {
         io:println(string `${car.plate} | ${car.make} ${car.model} (${car.year}) | $${car.daily_price}/day | ${car.mileage} miles`);
     });
     
@@ -363,11 +235,11 @@ function listAvailableCars(string filter) returns error? {
     }
 }
 
-function searchCar(string plate) returns error? {
-    SearchCarResponse response = check client->SearchCar({plate: plate});
+function searchCar(car_rental:SearchCarRequest request) returns error? {
+    car_rental:SearchCarResponse response = check client->SearchCar(request);
     
     if response.found {
-        Car car = response.car ?: panic error("Car not found in response");
+        car_rental:Car car = response.car;
         io:println("Car found: " + car.make + " " + car.model + " (" + car.year.toString() + ")");
         io:println("Daily Price: $" + car.daily_price.toString());
         io:println("Status: " + car.status.toString());
@@ -376,18 +248,11 @@ function searchCar(string plate) returns error? {
     }
 }
 
-function addToCart(string customerId, string plate, string startDate, string endDate) returns error? {
-    AddToCartRequest request = {
-        customer_id: customerId,
-        plate: plate,
-        start_date: startDate,
-        end_date: endDate
-    };
-    
-    AddToCartResponse response = check client->AddToCart(request);
+function addToCart(car_rental:AddToCartRequest request) returns error? {
+    car_rental:AddToCartResponse response = check client->AddToCart(request);
     
     if response.success {
-        CartItem item = response.cart_item ?: panic error("Cart item not found in response");
+        car_rental:CartItem item = response.cart_item;
         io:println("✓ Added to cart: " + item.plate + " from " + item.start_date + " to " + item.end_date);
         io:println("  Estimated price: $" + item.estimated_price.toString());
     } else {
@@ -395,15 +260,15 @@ function addToCart(string customerId, string plate, string startDate, string end
     }
 }
 
-function placeReservation(string customerId) returns error? {
-    PlaceReservationResponse response = check client->PlaceReservation({customer_id: customerId});
+function placeReservation(car_rental:PlaceReservationRequest request) returns error? {
+    car_rental:PlaceReservationResponse response = check client->PlaceReservation(request);
     
     if response.success {
         io:println("✓ Reservation placed successfully!");
         io:println("Total amount: $" + response.total_amount.toString());
         io:println("Reservations created: " + response.reservations.length().toString());
         
-        foreach Reservation reservation in response.reservations {
+        foreach car_rental:Reservation reservation in response.reservations {
             io:println("  - " + reservation.reservation_id + ": " + reservation.plate + 
                       " (" + reservation.start_date + " to " + reservation.end_date + ")");
         }
@@ -412,13 +277,13 @@ function placeReservation(string customerId) returns error? {
     }
 }
 
-function listReservations() returns error? {
-    stream<Reservation, grpc:Error?> reservationStream = check client->ListReservations({});
+function listReservations(car_rental:ListReservationsRequest request) returns error? {
+    stream<car_rental:Reservation, grpc:Error?> reservationStream = check client->ListReservations(request);
     
     io:println("All Reservations:");
     io:println("=================");
     
-    error? streamResult = reservationStream.forEach(function(Reservation reservation) {
+    error? streamResult = reservationStream.forEach(function(car_rental:Reservation reservation) {
         io:println(string `${reservation.reservation_id} | Customer: ${reservation.customer_id} | Car: ${reservation.plate}`);
         io:println(string `  Dates: ${reservation.start_date} to ${reservation.end_date} | Price: $${reservation.total_price} | Status: ${reservation.status}`);
         io:println("---");
@@ -429,19 +294,11 @@ function listReservations() returns error? {
     }
 }
 
-function updateCar(string plate, string make, string model, int year, float dailyPrice) returns error? {
-    UpdateCarRequest request = {
-        plate: plate,
-        make: make,
-        model: model,
-        year: year,
-        daily_price: dailyPrice
-    };
-    
-    UpdateCarResponse response = check client->UpdateCar(request);
+function updateCar(car_rental:UpdateCarRequest request) returns error? {
+    car_rental:UpdateCarResponse response = check client->UpdateCar(request);
     
     if response.success {
-        Car car = response.updated_car ?: panic error("Updated car not found in response");
+        car_rental:Car car = response.updated_car;
         io:println("✓ Updated car: " + car.plate + " -> " + car.make + " " + car.model + 
                   " (" + car.year.toString() + ") $" + car.daily_price.toString() + "/day");
     } else {
@@ -449,11 +306,11 @@ function updateCar(string plate, string make, string model, int year, float dail
     }
 }
 
-function removeCar(string plate) returns error? {
-    RemoveCarResponse response = check client->RemoveCar({plate: plate});
+function removeCar(car_rental:RemoveCarRequest request) returns error? {
+    car_rental:RemoveCarResponse response = check client->RemoveCar(request);
     
     if response.success {
-        io:println("✓ Car removed: " + plate);
+        io:println("✓ Car removed: " + request.plate);
         io:println("Remaining cars in inventory: " + response.remaining_cars.length().toString());
     } else {
         io:println("✗ Failed to remove car: " + response.message);
@@ -480,22 +337,30 @@ function startInteractiveMode() returns error? {
         match choice {
             "1" => {
                 string filter = io:readln("Enter filter (or press Enter for all): ");
-                check listAvailableCars(filter);
+                int? yearFilter = ();
+                string yearStr = io:readln("Enter year filter (or press Enter to skip): ");
+                if yearStr != "" {
+                    yearFilter = check int:fromString(yearStr) on fail var e => {
+                        io:println("Invalid year filter");
+                        return e;
+                    };
+                }
+                check listAvailableCars({filter_text: filter == "" ? () : filter, year_filter: yearFilter});
             }
             "2" => {
                 string plate = io:readln("Enter car plate: ");
-                check searchCar(plate);
+                check searchCar({plate: plate});
             }
             "3" => {
                 string customerId = io:readln("Enter customer ID: ");
                 string plate = io:readln("Enter car plate: ");
                 string startDate = io:readln("Enter start date (YYYY-MM-DD): ");
                 string endDate = io:readln("Enter end date (YYYY-MM-DD): ");
-                check addToCart(customerId, plate, startDate, endDate);
+                check addToCart({customer_id: customerId, plate: plate, start_date: startDate, end_date: endDate});
             }
             "4" => {
                 string customerId = io:readln("Enter customer ID: ");
-                check placeReservation(customerId);
+                check placeReservation({customer_id: customerId});
             }
             "5" => {
                 check adminAddCar();
@@ -505,10 +370,15 @@ function startInteractiveMode() returns error? {
             }
             "7" => {
                 string plate = io:readln("Enter car plate to remove: ");
-                check removeCar(plate);
+                check removeCar({plate: plate});
             }
             "8" => {
-                check listReservations();
+                string? customerId = ();
+                string customerIdInput = io:readln("Enter customer ID to filter (or press Enter for all): ");
+                if customerIdInput != "" {
+                    customerId = customerIdInput;
+                }
+                check listReservations({customer_id: customerId});
             }
             "9" => {
                 io:println("Goodbye!");
