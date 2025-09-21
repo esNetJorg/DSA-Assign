@@ -76,4 +76,49 @@ public function main() returns error? {
             json result = check resp.getJsonPayload();
             io:println("Overdue Assets: ", result);
 
+        } else if choice == "6" {
+            string assetTag = io:readln("Asset Tag: ");
+            Component component ={
+                componentId: io:readln("Component ID: "),
+                name: io:readln("Component Name: ")
+            };
+             http:Response resp = check assetClient->post("/addComponent/" + assetTag, component);
+             json result = check resp.getJsonPayload();
+             io:println("Response: ",result);
+        } else if choice == "7" {
+            string assetTag = io:readln("Asset Tag: ");
+            WorkOrder workOrder = {
+                orderId: io:readln("Work Order ID: "),
+                status: io:readln("Status: "),
+                tasks: []
+          };
+          
+          string addTasks= io:readln("Add tasks? (yes/no): ");
+          if addTasks.toLowerAscii()== "yes"{
+             while true{
+                Task task= {
+                    taskId: io:readln("Task ID: "),
+                    description: io:readln("Description: "),
+                    status: io:readln("Status: ")
+               };
+               workOrder.tasks.push(task);
+               string more = io:readln("Add another task? (yes/no): ");
+               if more.toLowerAscii() != "yes" {
+                                  break;
+            }
+        }
+    }
+
+    http:Response resp = check assetClient->post("/addWorkOrder/"+ assetTag, workOrder);
+    json result = check resp.getJsonPayload();
+    io:println("Response: ", result);
+               
+    
+        } else {
+            io:println("Invalid choice, try again.");
+        }
+    }
+
+}
+
 
