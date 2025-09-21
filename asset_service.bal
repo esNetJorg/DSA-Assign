@@ -38,7 +38,7 @@ type Asset record {
 
 map<Asset> assets = {};
 
-// --- Helper function to normalize strings (lowercase + remove spaces)
+// -- function to consider users input and exist data  (lowercase + remove spaces)
 function normalize(string input) returns string {
     string lowered = input.toLowerAscii();
     string result = "";
@@ -53,13 +53,13 @@ function normalize(string input) returns string {
 
 service /assets on new http:Listener(8080) {
 
-    // Add a new asset
+    // add a new asset
     resource function post add(@http:Payload Asset asset) returns json {
         assets[asset.assetTag] = asset;
         return { message: "Asset was added successfully" };
     }
 
-    // Get all assets
+    // get all assets, if they exist
     resource function get all() returns Asset[] {
         Asset[] result = [];
         foreach var [_, asset] in assets.entries() {
@@ -68,7 +68,7 @@ service /assets on new http:Listener(8080) {
         return result;
     }
 
-    // Get assets by faculty (ignore spaces + case-insensitive + partial match)
+    // to get them assets by faculty : the ignore spaces,case-insensitive and partial match was implementented
     resource function get byFaculty(string faculty) returns json|Asset[] {
         string normalizedQuery = normalize(faculty);
         Asset[] result = [];
@@ -86,7 +86,7 @@ service /assets on new http:Listener(8080) {
         return result;
     }
 
-    // Add a schedule to an existing asset
+    // to add a schedule to ONLY an existing asset
     resource function post addSchedule(string assetTag, @http:Payload Schedule schedule) returns json {
         Asset? maybeAsset = assets[assetTag];
         if maybeAsset is Asset {
@@ -97,7 +97,30 @@ service /assets on new http:Listener(8080) {
         return { message: "Asset wasn't found" };
     }
 
-    // Get overdue assets
+    //---- to add a component to ONLY an existing asset
+resource function post addComponent(string assetTag, @http:Payload Component component) returns json {
+    Asset? maybeAsset = assets[assetTag];
+    if maybeAsset is Asset {
+        maybeAsset.components.push(component);
+        assets[assetTag] = maybeAsset;
+        return { message: "The component was added successfully" };
+    }
+    return { message: "Asset wasn't found" };
+}
+
+//to a work order to an existing asset----- NB: don't temper with this one
+resource function post addWorkOrder(string assetTag, @http:Payload WorkOrder workOrder) returns json {
+    Asset? maybeAsset = assets[assetTag];
+    if maybeAsset is Asset {
+        maybeAsset.workOrders.push(workOrder);
+        assets[assetTag] = maybeAsset;
+        return { message: "The work order was added successfully" };
+    }
+    return { message: "Asset wasn't found" };
+}
+
+
+    // to get overdue  overdue assets
     resource function get overdue() returns json|Asset[] {
         time:Utc now = time:utcNow();
         Asset[] result = [];
@@ -123,3 +146,4 @@ service /assets on new http:Listener(8080) {
         return result;
     }
 }
+
