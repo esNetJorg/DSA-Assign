@@ -379,5 +379,6 @@ public function main() returns error? {
     check testCompleteWorkflow();
     check testPerformance();
     
-    io:println("\n=== All Tests Passed! ===");
+    io:println("\n=== All Tests Passed!! ===");
+
 }
