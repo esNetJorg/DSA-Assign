@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentaCar Pro - Premium Car Rental System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-car"></i>
+                <div class="logo-text">
+                    <h1>RentaCar Pro</h1>
+                    <p>Premium Car Rental System</p>
+                </div>
+            </div>
+            
+            <div class="user-info">
+                <div class="user-profile">
+                    <i class="fas fa-user"></i>
+                    <span id="user-name">John Doe</span>
+                    <span class="role-badge" id="user-role">CUSTOMER</span>
+                </div>
+                
+                <button class="btn btn-secondary" onclick="switchRole()">
+                    <i class="fas fa-exchange-alt"></i>
+                    Switch Role
+                </button>
+                
+                <button class="btn btn-primary cart-btn" onclick="showView('cart')">
+                    <i class="fas fa-shopping-cart"></i>
+                    Cart
+                    <span class="cart-count" id="cart-count">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="navigation">
+        <div class="nav-content">
+            <div class="nav-tabs" id="nav-tabs">
+                <!-- Navigation will be dynamically populated -->
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="view-section active">
+            <h2 style="margin-bottom: 2rem; font-size: 2rem; color: #333;">Dashboard</h2>
+            
+            <div class="dashboard-stats" id="dashboard-stats">
+                <!-- Stats will be dynamically populated -->
+            </div>
+
+            <div class="form-section">
+                <h3 style="margin-bottom: 1rem; color: #333;">
+                    <i class="fas fa-chart-line"></i>
+                    Recent Activity
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem; color: #666;">
+                        <i class="fas fa-check-circle" style="color: #4CAF50;"></i>
+                        <span>System operational - All services running normally</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem; color: #666;">
+                        <i class="fas fa-clock" style="color: #ff9800;"></i>
+                        <span>Last data sync: <span id="last-sync">Just now</span></span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem; color: #666;">
+                        <i class="fas fa-car" style="color: #2196F3;"></i>
+                        <span id="available-cars-text">Loading available cars...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Browse Cars View -->
+        <div id="browse-cars-view" class="view-section">
+            <div class="cars-header">
+                <h2 style="font-size: 2rem; color: #333;">Browse Cars</h2>
+                
+                <div class="search-filters">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Search cars..." onkeyup="handleSearch()">
+                    </div>
+                    
+                    <select class="filter-select" id="year-filter" onchange="handleSearch()">
+                        <option value="">All Years</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                        <option value="2021">2021</option>
+                        <option value="2020">2020</option>
+                    </select>
+                    
+                    <button class="btn btn-primary" onclick="fetchCars()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div id="cars-loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+            </div>
+            
+            <div class="cars-grid" id="cars-grid">
+                <!-- Cars will be dynamically populated -->
+            </div>
+        </div>
+
+        <!-- Manage Cars View (Admin) -->
+        <div id="manage-cars-view" class="view-section">
+            <div class="cars-header">
+                <h2 style="font-size: 2rem; color: #333;">Manage Cars</h2>
+                <button class="btn btn-success" onclick="showAddCarModal()">
+                    <i class="fas fa-plus"></i>
+                    Add New Car
+                </button>
+            </div>
+            
+            <div class="cars-grid" id="admin-cars-grid">
+                <!-- Admin cars will be dynamically populated -->
+            </div>
+        </div>
+
+        <!-- Cart View -->
+        <div id="cart-view" class="view-section">
+            <div class="cars-header">
+                <h2 style="font-size: 2rem; color: #333;">My Cart</h2>
+                <button class="btn btn-success" onclick="placeReservation()" id="checkout-btn" disabled>
+                    <i class="fas fa-credit-card"></i>
+                    Place Reservation
+                </button>
+            </div>
+            
+            <div class="cart-items" id="cart-items">
+                <!-- Cart items will be dynamically populated -->
+            </div>
+            
+            <div class="cart-summary" id="cart-summary" style="display: none;">
+                <h3>Order Summary</h3>
+                <div style="display: flex; justify-content: space-between; margin: 1rem 0;">
+                    <span>Total Items:</span>
+                    <span id="total-items">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin: 1rem 0; font-size: 1.2rem; font-weight: 700;">
+                    <span>Total Amount:</span>
+                    <span id="total-amount">$0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reservations View -->
+        <div id="reservations-view" class="view-section">
+            <h2 style="margin-bottom: 2rem; font-size: 2rem; color: #333;">Reservations</h2>
+            
+            <div class="reservations-grid" id="reservations-grid">
+                <!-- Reservations will be dynamically populated -->
+            </div>
+        </div>
+
+        <!-- My Bookings View -->
+        <div id="my-bookings-view" class="view-section">
+            <h2 style="margin-bottom: 2rem; font-size: 2rem; color: #333;">My Bookings</h2>
+            
+            <div class="reservations-grid" id="my-bookings-grid">
+                <!-- User bookings will be dynamically populated -->
+            </div>
+        </div>
+
+        <!-- Users Management View (Admin) -->
+        <div id="manage-users-view" class="view-section">
+            <div class="cars-header">
+                <h2 style="font-size: 2rem; color: #333;">Manage Users</h2>
+                <button class="btn btn-success" onclick="showAddUserModal()">
+                    <i class="fas fa-user-plus"></i>
+                    Add New User
+                </button>
+            </div>
+            
+            <div class="form-section">
+                <h3 style="margin-bottom: 1rem;">Create Multiple Users</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>User Type</label>
+                        <select id="batch-user-type">
+                            <option value="customer">Customer</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Number of Users</label>
+                        <input type="number" id="batch-user-count" value="1" min="1" max="10">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="createBatchUsers()">
+                    <i class="fas fa-users"></i>
+                    Create Users
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Car Modal -->
+    <div id="add-car-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Car</h3>
+                <button class="close-btn" onclick="closeModal('add-car-modal')">&times;</button>
+            </div>
+            
+            <form onsubmit="handleAddCar(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>License Plate *</label>
+                        <input type="text" id="car-plate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Make *</label>
+                        <input type="text" id="car-make" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Model *</label>
+                        <input type="text" id="car-model" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Year *</label>
+                        <input type="number" id="car-year" required min="1990" max="2025">
+                    </div>
+                    <div class="form-group">
+                        <label>Daily Price ($) *</label>
+                        <input type="number" id="car-price" required min="1" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Mileage *</label>
+                        <input type="number" id="car-mileage" required min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="car-status">
+                            <option value="AVAILABLE">Available</option>
+                            <option value="UNAVAILABLE">Unavailable</option>
+                            <option value="RENTED">Rented</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">
+                        <i class="fas fa-save"></i>
+                        Add Car
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('add-car-modal')" style="flex: 1;">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rent Car Modal -->
+    <div id="rent-car-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Rent Car</h3>
+                <button class="close-btn" onclick="closeModal('rent-car-modal')">&times;</button>
+            </div>
+            
+            <div id="selected-car-info" style="margin-bottom: 2rem;">
+                <!-- Selected car info will be populated -->
+            </div>
+            
+            <form onsubmit="handleRentCar(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Start Date *</label>
+                        <input type="date" id="rent-start-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date *</label>
+                        <input type="date" id="rent-end-date" required>
+                    </div>
+                </div>
+                
+                <div id="rental-summary" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem 0; display: none;">
+                    <h4>Rental Summary</h4>
+                    <div style="display: flex; justify-content: space-between; margin: 0.5rem 0;">
+                        <span>Days:</span>
+                        <span id="rental-days">0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 0.5rem 0;">
+                        <span>Daily Rate:</span>
+                        <span id="daily-rate">$0.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 0.5rem 0; font-weight: 700; border-top: 1px solid #ddd; padding-top: 0.5rem;">
+                        <span>Estimated Total:</span>
+                        <span id="estimated-total">$0.00</span>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">
+                        <i class="fas fa-cart-plus"></i>
+                        Add to Cart
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('rent-car-modal')" style="flex: 1;">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
