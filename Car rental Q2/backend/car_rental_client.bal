@@ -5,7 +5,7 @@ import ballerina/log;
 // Client configuration
 CarRentalServiceClient client = check new("http://localhost:9090");
 
-// Demo data
+// Mock data
 User[] demo_users = [
     {
         user_id: "admin1",
@@ -362,4 +362,5 @@ function adminAddCar() returns error? {
     float dailyPrice = check float:fromString(priceStr);
     int mileage = check int:fromString(mileageStr);
     
+
     AddCar
