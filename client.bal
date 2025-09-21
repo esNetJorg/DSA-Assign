@@ -27,7 +27,11 @@ public function main() returns error? {
         io:println("3. Filter by Faculty");
         io:println("4. Add Schedule");
         io:println("5. View Overdue Assets");
-        io:println("6. Exit");
+        io:println("6. Add Component");
+        io:println("7. Add Work Order");
+        io:println("8. Exit");
+
+        
 
         string choice = io:readln("Enter choice: ");
 
@@ -75,11 +79,46 @@ public function main() returns error? {
             io:println("Overdue Assets: ", result);
 
         } else if choice == "6" {
-            io:println("Exiting...");
-            break;
+            string assetTag = io:readln("Asset Tag: ");
+            Component component ={
+                componentId: io:readln("Component ID: "),
+                name: io:readln("Component Name: ")
+            };
+             http:Response resp = check assetClient->post("/addComponent/" + assetTag, component);
+             json result = check resp.getJsonPayload();
+             io:println("Response: ",result);
+        } else if choice == "7" {
+            string assetTag = io:readln("Asset Tag: ");
+            WorkOrder workOrder = {
+                orderId: io:readln("Work Order ID: "),
+                status: io:readln("Status: "),
+                tasks: []
+          };
+          
+          string addTasks= io:readln("Add tasks? (yes/no): ");
+          if addTasks.toLowerAscii()== "yes"{
+             while true{
+                Task task= {
+                    taskId: io:readln("Task ID: "),
+                    description: io:readln("Description: "),
+                    status: io:readln("Status: ")
+               };
+               workOrder.tasks.push(task);
+               string more = io:readln("Add another task? (yes/no): ");
+               if more.toLowerAscii() != "yes" {
+                                  break;
+            }
+        }
+    }
 
+    http:Response resp = check assetClient->post("/addWorkOrder/"+ assetTag, workOrder);
+    json result = check resp.getJsonPayload();
+    io:println("Response: ", result);
+               
+    
         } else {
             io:println("Invalid choice, try again.");
         }
     }
+
 }
