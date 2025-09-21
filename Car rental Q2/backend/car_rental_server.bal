@@ -3,7 +3,7 @@ import ballerina/log;
 import ballerina/time;
 import ballerina/uuid;
 
-// Generated types from protobuf (you'll need to generate these using Ballerina gRPC tools)
+// Data types (these would be generated from protobuf in real implementation)
 public type Car record {
     string plate;
     string make;
@@ -52,19 +52,129 @@ public enum UserRole {
     ADMIN
 }
 
+// Request/Response types
+public type AddCarRequest record {
+    string make;
+    string model;
+    int year;
+    float daily_price;
+    int mileage;
+    string plate;
+    CarStatus status;
+};
+
+public type AddCarResponse record {
+    boolean success;
+    string message;
+    string car_id;
+};
+
+public type CreateUsersRequest record {
+    User[] users;
+};
+
+public type CreateUsersResponse record {
+    boolean success;
+    string message;
+    int users_created;
+};
+
+public type UpdateCarRequest record {
+    string plate;
+    string? make = ();
+    string? model = ();
+    int? year = ();
+    float? daily_price = ();
+    int? mileage = ();
+    CarStatus? status = ();
+};
+
+public type UpdateCarResponse record {
+    boolean success;
+    string message;
+    Car updated_car;
+};
+
+public type RemoveCarRequest record {
+    string plate;
+};
+
+public type RemoveCarResponse record {
+    boolean success;
+    string message;
+    Car[] remaining_cars;
+};
+
+public type ListAvailableCarsRequest record {
+    string? filter_text = ();
+    int? year_filter = ();
+};
+
+public type SearchCarRequest record {
+    string plate;
+};
+
+public type SearchCarResponse record {
+    boolean found;
+    Car car;
+    string message;
+};
+
+public type AddToCartRequest record {
+    string customer_id;
+    string plate;
+    string start_date;
+    string end_date;
+};
+
+public type AddToCartResponse record {
+    boolean success;
+    string message;
+    CartItem cart_item;
+};
+
+public type PlaceReservationRequest record {
+    string customer_id;
+};
+
+public type PlaceReservationResponse record {
+    boolean success;
+    string message;
+    Reservation[] reservations;
+    float total_amount;
+};
+
+public type ListReservationsRequest record {
+    string? customer_id = ();
+};
+
 // In-memory data storage
 map<Car> cars = {};
 map<User> users = {};
-map<CartItem[]> customerCarts = {};  // customer_id -> cart items
+map<CartItem[]> customerCarts = {};
 map<Reservation> reservations = {};
 
 // Service implementation
-@grpc:ServiceDescriptor {descriptor: ROOT_DESCRIPTOR, descMap: getDescriptorMap()}
+@grpc:ServiceDescriptor {
+    descriptor: ROOT_DESCRIPTOR,
+    descMap: getDescriptorMap()
+}
 service "CarRentalService" on new grpc:Listener(9090) {
 
     // Admin: Add a new car to the system
     remote function AddCar(AddCarRequest request) returns AddCarResponse|error {
         log:printInfo("Adding new car with plate: " + request.plate);
+        
+        // Validate car data
+        error? validationResult = validateCarData(request);
+        if validationResult is error {
+            log:printError("Car validation failed: " + validationResult.message());
+            return {
+                success: false,
+                message: validationResult.message(),
+                car_id: ""
+            };
+        }
         
         // Check if car already exists
         if cars.hasKey(request.plate) {
@@ -87,6 +197,7 @@ service "CarRentalService" on new grpc:Listener(9090) {
         };
         
         cars[request.plate] = newCar;
+        log:printInfo("Car added successfully: " + formatCarInfo(newCar));
         
         return {
             success: true,
@@ -100,7 +211,16 @@ service "CarRentalService" on new grpc:Listener(9090) {
         log:printInfo("Creating " + request.users.length().toString() + " users");
         
         int created_count = 0;
+        string[] errors = [];
+        
         foreach User user in request.users {
+            // Validate user data
+            error? validationResult = validateUserData(user);
+            if validationResult is error {
+                errors.push("User " + user.user_id + ": " + validationResult.message());
+                continue;
+            }
+            
             if !users.hasKey(user.user_id) {
                 User newUser = {
                     user_id: user.user_id,
@@ -110,14 +230,22 @@ service "CarRentalService" on new grpc:Listener(9090) {
                     created_at: time:utcToString(time:utcNow())
                 };
                 users[user.user_id] = newUser;
-                customerCarts[user.user_id] = [];  // Initialize empty cart
+                customerCarts[user.user_id] = [];
                 created_count += 1;
+                log:printInfo("User created: " + formatUserInfo(newUser));
+            } else {
+                errors.push("User " + user.user_id + " already exists");
             }
         }
         
+        string message = created_count.toString() + " users created successfully";
+        if errors.length() > 0 {
+            message += ". Errors: " + string:'join(", ", ...errors);
+        }
+        
         return {
-            success: true,
-            message: created_count.toString() + " users created successfully",
+            success: created_count > 0,
+            message: message,
             users_created: created_count
         };
     }
@@ -130,7 +258,16 @@ service "CarRentalService" on new grpc:Listener(9090) {
             return {
                 success: false,
                 message: "Car with plate " + request.plate + " not found",
-                updated_car: {}
+                updated_car: {
+                    plate: "",
+                    make: "",
+                    model: "",
+                    year: 0,
+                    daily_price: 0.0,
+                    mileage: 0,
+                    status: AVAILABLE,
+                    created_at: ""
+                }
             };
         }
         
@@ -149,6 +286,7 @@ service "CarRentalService" on new grpc:Listener(9090) {
         };
         
         cars[request.plate] = updatedCar;
+        log:printInfo("Car updated: " + formatCarInfo(updatedCar));
         
         return {
             success: true,
@@ -170,6 +308,7 @@ service "CarRentalService" on new grpc:Listener(9090) {
         }
         
         _ = cars.remove(request.plate);
+        log:printInfo("Car removed: " + request.plate);
         
         return {
             success: true,
@@ -220,6 +359,7 @@ service "CarRentalService" on new grpc:Listener(9090) {
             }
         }
         
+        log:printInfo("Found " + available_cars.length().toString() + " available cars");
         return available_cars.toStream();
     }
     
@@ -230,7 +370,16 @@ service "CarRentalService" on new grpc:Listener(9090) {
         if !cars.hasKey(request.plate) {
             return {
                 found: false,
-                car: {},
+                car: {
+                    plate: "",
+                    make: "",
+                    model: "",
+                    year: 0,
+                    daily_price: 0.0,
+                    mileage: 0,
+                    status: AVAILABLE,
+                    created_at: ""
+                },
                 message: "Car with plate " + request.plate + " not found"
             };
         }
@@ -261,7 +410,12 @@ service "CarRentalService" on new grpc:Listener(9090) {
             return {
                 success: false,
                 message: "Customer not found",
-                cart_item: {}
+                cart_item: {
+                    plate: "",
+                    start_date: "",
+                    end_date: "",
+                    estimated_price: 0.0
+                }
             };
         }
         
@@ -270,7 +424,12 @@ service "CarRentalService" on new grpc:Listener(9090) {
             return {
                 success: false,
                 message: "Car not found",
-                cart_item: {}
+                cart_item: {
+                    plate: "",
+                    start_date: "",
+                    end_date: "",
+                    estimated_price: 0.0
+                }
             };
         }
         
@@ -279,16 +438,26 @@ service "CarRentalService" on new grpc:Listener(9090) {
             return {
                 success: false,
                 message: "Car is not available",
-                cart_item: {}
+                cart_item: {
+                    plate: "",
+                    start_date: "",
+                    end_date: "",
+                    estimated_price: 0.0
+                }
             };
         }
         
-        // Validate dates (basic validation)
+        // Validate dates
         if !isValidDateRange(request.start_date, request.end_date) {
             return {
                 success: false,
                 message: "Invalid date range",
-                cart_item: {}
+                cart_item: {
+                    plate: "",
+                    start_date: "",
+                    end_date: "",
+                    estimated_price: 0.0
+                }
             };
         }
         
@@ -307,6 +476,8 @@ service "CarRentalService" on new grpc:Listener(9090) {
         CartItem[] cart = customerCarts.get(request.customer_id);
         cart.push(cartItem);
         customerCarts[request.customer_id] = cart;
+        
+        log:printInfo("Car added to cart: " + cartItem.plate + " for " + days.toString() + " days");
         
         return {
             success: true,
@@ -381,10 +552,14 @@ service "CarRentalService" on new grpc:Listener(9090) {
             reservations[reservation_id] = reservation;
             new_reservations.push(reservation);
             total_amount += item.estimated_price;
+            
+            log:printInfo("Reservation created: " + formatReservationInfo(reservation));
         }
         
         // Clear the cart
         customerCarts[request.customer_id] = [];
+        
+        log:printInfo("Reservations placed successfully. Total amount: $" + total_amount.toString());
         
         return {
             success: true,
@@ -395,29 +570,95 @@ service "CarRentalService" on new grpc:Listener(9090) {
     }
 }
 
-// Helper functions
-function isValidDateRange(string start_date, string end_date) returns boolean {
-    // Basic date validation (you can enhance this)
-    return start_date.length() == 10 && end_date.length() == 10;
+// Utility Functions
+function validateCarData(AddCarRequest request) returns error? {
+    if request.plate.length() < 3 || request.plate.length() > 10 {
+        return error("License plate must be between 3 and 10 characters");
+    }
+    
+    if request.make.length() < 2 {
+        return error("Car make must be at least 2 characters");
+    }
+    
+    if request.model.length() < 2 {
+        return error("Car model must be at least 2 characters");
+    }
+    
+    if request.year < 1990 || request.year > 2025 {
+        return error("Car year must be between 1990 and 2025");
+    }
+    
+    if request.daily_price <= 0.0 {
+        return error("Daily price must be positive");
+    }
+    
+    if request.mileage < 0 {
+        return error("Mileage cannot be negative");
+    }
 }
 
-function calculateDays(string start_date, string end_date) returns int {
-    // Simple day calculation (you can enhance this with proper date parsing)
-    return 1; // Placeholder - implement proper date calculation
+function validateUserData(User user) returns error? {
+    if user.user_id.length() < 3 {
+        return error("User ID must be at least 3 characters");
+    }
+    
+    if user.name.length() < 2 {
+        return error("Name must be at least 2 characters");
+    }
+    
+    if !isValidEmail(user.email) {
+        return error("Invalid email format");
+    }
 }
 
-function hasDateConflict(string plate, string start_date, string end_date) returns boolean {
-    // Check if there are any existing reservations that overlap with the requested dates
+function isValidEmail(string email) returns boolean {
+    // Simple email validation
+    return email.includes("@") && email.includes(".") && email.length() > 5;
+}
+
+function isValidDateRange(string startDate, string endDate) returns boolean {
+    // Basic date validation
+    return startDate.length() == 10 && endDate.length() == 10 && startDate <= endDate;
+}
+
+function calculateDays(string startDate, string endDate) returns int {
+    // Simplified day calculation
+    // In real implementation, use proper date parsing
+    return 1; // Placeholder
+}
+
+function hasDateConflict(string plate, string startDate, string endDate) returns boolean {
+    // Check if there are any existing reservations that overlap
     foreach Reservation reservation in reservations.values() {
         if reservation.plate == plate && reservation.status == "CONFIRMED" {
-            // Check for date overlap (implement proper date comparison)
-            // This is a simplified check
-            if !(end_date < reservation.start_date || start_date > reservation.end_date) {
+            // Simple overlap check
+            if !(endDate < reservation.start_date || startDate > reservation.end_date) {
                 return true;
             }
         }
     }
     return false;
+}
+
+function formatCarInfo(Car car) returns string {
+    return string `${car.make} ${car.model} (${car.year}) - $${car.daily_price}/day | ${car.mileage} miles | Status: ${car.status}`;
+}
+
+function formatUserInfo(User user) returns string {
+    return string `${user.user_id} | ${user.name} | ${user.email} | ${user.role}`;
+}
+
+function formatReservationInfo(Reservation reservation) returns string {
+    return string `${reservation.reservation_id} | Customer: ${reservation.customer_id} | Car: ${reservation.plate} | ${reservation.start_date} to ${reservation.end_date} | $${reservation.total_price}`;
+}
+
+// Placeholder descriptor functions (would be generated from protobuf)
+function ROOT_DESCRIPTOR() returns byte[] {
+    return [];
+}
+
+function getDescriptorMap() returns map<any> {
+    return {};
 }
 
 public function main() {
