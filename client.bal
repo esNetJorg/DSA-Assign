@@ -31,4 +31,49 @@ public function main() returns error? {
         io:println("7. Add Work Order");
         io:println("8. Exit");
 
+     string choice = io:readln("Enter choice: ");
+
+        if choice == "1" {
+            Asset asset = {
+                assetTag: io:readln("Asset Tag: "),
+                name: io:readln("Name: "),
+                faculty: io:readln("Faculty: "),
+                department: io:readln("Department: "),
+                status: io:readln("Status: "),
+                acquiredDate: io:readln("Acquired Date (yyyy-MM-dd): "),
+                components: [],
+                schedules: [],
+                workOrders: []
+            }; 
+            http:Response resp = check assetClient->post("/add", asset);
+            json result = check resp.getJsonPayload();
+            io:println("Response: ", result);
+
+        } else if choice == "2" {
+            http:Response resp = check assetClient->get("/all");
+            json result = check resp.getJsonPayload();
+            io:println("All Assets: ", result);
+
+  } else if choice == "3" {
+            string faculty = io:readln("Faculty: ");
+            http:Response resp = check assetClient->get("/byFaculty?faculty=" + faculty);
+            json result = check resp.getJsonPayload();
+            io:println("Assets by Faculty: ", result);
+
+        } else if choice == "4" {
+            string assetTag = io:readln("Asset Tag: ");
+            Schedule schedule = {
+                scheduleId: io:readln("Schedule ID: "),
+                description: io:readln("Description: "),
+                dueDate: io:readln("Due Date (yyyy-MM-dd): ")
+            };
+            http:Response resp = check assetClient->post("/addSchedule/" + assetTag, schedule);
+            json result = check resp.getJsonPayload();
+            io:println("Response: ", result);
+
+        } else if choice == "5" {
+            http:Response resp = check assetClient->get("/overdue");
+            json result = check resp.getJsonPayload();
+            io:println("Overdue Assets: ", result);
+
 
